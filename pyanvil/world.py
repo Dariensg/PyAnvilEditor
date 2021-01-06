@@ -5,6 +5,11 @@ import pyanvil.stream as stream
 from pyanvil.biomes import Biome
 from pyanvil.canvas import Canvas
 
+
+class ChunkNotPresent(Exception):
+    pass
+
+
 class BlockState:
     def __init__(self, name, props):
         self.name = name
@@ -96,17 +101,27 @@ class ChunkSection:
         width = math.ceil(math.log(len(self.palette), 2))
         if width < 4:
             width = 4
-        data = 0
-        for block in reversed(self.blocks):
-            data = (data << width) + state_mapping[block._state]
 
-        mask = (2 ** 64) - 1
-        for i in range(int((len(self.blocks) * width)/64)):
-            lng = data & mask
+        # max amount of states that fit in a long
+        states_per_long = 64 // width
+
+        # amount of longs
+        arraylength = math.ceil(len(self.blocks) / states_per_long)
+
+        for long_index in range(arraylength):
+            lng = 0
+            for state in range(states_per_long):
+                # insert blocks in reverse, so first one ends up most to the right
+                block_index = long_index * states_per_long + (states_per_long - state - 1)
+
+                if block_index < len(self.blocks):
+                    block = self.blocks[block_index]
+                    lng = (lng << width) + state_mapping[block._state]
+
             lng = int.from_bytes(lng.to_bytes(8, byteorder='big', signed=False), byteorder='big', signed=True)
             serial_states.add_child(nbt.LongTag(lng))
-            data = data >> 64
         return serial_states
+
 
 class Chunk:
     def __init__(self, xpos, zpos, sections, raw_nbt, orig_size):
@@ -198,22 +213,17 @@ class Chunk:
 
         return new_nbt
 
-    def _read_width_from_loc(long_list, width, possition):
-        offset = possition * width
-        # if this is split across two nums
-        if (offset % 64) + width > 64:
-            # Find the lengths on each side of the split
-            side1len = 64 - ((offset) % 64)
-            side2len = ((offset + width) % 64)
-            # Select the sections we want from each
-            side1 = Chunk._read_bits(long_list[int(offset/64)], side1len, offset % 64)
-            side2 = Chunk._read_bits(long_list[int((offset + width)/64)], side2len, 0)
-            # Join them
-            comp = (side2 << side1len) + side1
-            return comp
-        else:
-            comp = Chunk._read_bits(long_list[int(offset/64)], width, offset % 64)
-            return comp
+    def _read_width_from_loc(long_list, width, position):
+        width = max(width, 4)
+        # max amount of blockstates that fit in each long
+        states_per_long = 64 // width
+
+        # the long in which this blockstate is stored
+        long_index = position // states_per_long
+
+        # at which bit in the long this state is located
+        position_in_long = (position % states_per_long) * width
+        return Chunk._read_bits(long_list[long_index], width, position_in_long)
 
     def _read_bits(num, width, start):
         # create a mask of size 'width' of 1 bits
@@ -353,7 +363,7 @@ class World:
 
             loc = locations[((chunk_pos[0] % 32) + (chunk_pos[1] % 32) * 32)]
             if self.debug:
-                print('Loading', chunk_pos,'from', region.name)
+                print('Loading', chunk_pos, 'from', region.name)
             chunk = self._load_binary_chunk_at(region, loc[0], loc[1])
             self.chunks[chunk_pos] = chunk
 
@@ -361,6 +371,8 @@ class World:
         region_file.seek(offset)
         datalen = int.from_bytes(region_file.read(4), byteorder='big', signed=False)
         compr = region_file.read(1)
+        if datalen <= 0:
+            raise KeyError("Cannot read chunk at {}".format(offset))
         # print(region_file.tell()-5, datalen)
         decompressed = zlib.decompress(region_file.read(datalen-1))
         data = nbt.parse_nbt(stream.InputStream(decompressed))
