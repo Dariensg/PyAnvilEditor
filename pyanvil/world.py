@@ -1,9 +1,9 @@
 import sys, math, gzip, zlib, time, os
 from pathlib import Path
-import pyanvil.nbt as nbt
-import pyanvil.stream as stream
-from pyanvil.biomes import Biome
-from pyanvil.canvas import Canvas
+import PyAnvilEditor.pyanvil.nbt as nbt
+import PyAnvilEditor.pyanvil.stream as stream
+from PyAnvilEditor.pyanvil.biomes import Biome
+from PyAnvilEditor.pyanvil.canvas import Canvas
 
 
 class ChunkNotPresent(Exception):
@@ -59,7 +59,17 @@ class ChunkSection:
         y = block_pos[1]
         z = block_pos[2]
 
-        return self.blocks[x + z * 16 + y * 16 ** 2]
+        try:
+            return self.blocks[x + z * 16 + y * 16 ** 2]
+        except IndexError:
+            self.populate_section()
+            return self.blocks[x + z * 16 + y * 16 ** 2]
+
+    def populate_section(self):
+        self.blocks = []
+        for b in range(16*16*16):
+            self.blocks.append(Block(BlockState('minecraft:air', {}), -1, -1))
+        self.serialize()
 
     def serialize(self):
         serial_section = self.raw_section

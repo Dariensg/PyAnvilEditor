@@ -3,7 +3,7 @@ import sys
 import os
 import numpy as np
 import pickle
-from pyanvil import World, BlockState, Material
+from .pyanvil import World, BlockState, Material
 
 
 def save_obj(obj, name, prepath='obj/'):

@@ -1,7 +1,7 @@
-from pyanvil.biomes import Biome
-from pyanvil.materials import Material
-from pyanvil.world import World, Chunk, Block, BlockState
-from pyanvil.canvas import Canvas
-from pyanvil.schematic import Schematic
+from PyAnvilEditor.pyanvil.biomes import Biome
+from PyAnvilEditor.pyanvil.materials import Material
+from PyAnvilEditor.pyanvil.world import World, Chunk, Block, BlockState
+from PyAnvilEditor.pyanvil.canvas import Canvas
+from PyAnvilEditor.pyanvil.schematic import Schematic
 
-import pyanvil.nbt
+import PyAnvilEditor.pyanvil.nbt
