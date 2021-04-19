@@ -97,7 +97,7 @@ class ChunkSection:
             palette_item = nbt.CompoundTag(tag_name='None', children=[
                 nbt.StringTag(state.name, tag_name='Name')
             ])
-            if len(state.props) != 0:
+            if state.props and len(state.props) != 0:
                 serial_props = nbt.CompoundTag(tag_name='Properties')
                 for name, val in state.props.items():
                     serial_props.add_child(nbt.StringTag(str(val), tag_name=name))
