@@ -260,6 +260,7 @@ class World:
         if not self.world_folder.is_dir():
             raise FileNotFoundError(f'No such folder \"{self.world_folder}\"')
         self.chunks = {}
+        self.write = write
 
     def __enter__(self):
         return self
@@ -273,80 +274,81 @@ class World:
         self.chunks = {}
 
     def close(self):
-        chunks_by_region = {}
-        for chunk_pos, chunk in self.chunks.items():
-            region = self._get_region_file(chunk_pos)
-            if region not in chunks_by_region:
-                chunks_by_region[region] = []
-            chunks_by_region[region].append(chunk)
+        if self.write:
+            chunks_by_region = {}
+            for chunk_pos, chunk in self.chunks.items():
+                region = self._get_region_file(chunk_pos)
+                if region not in chunks_by_region:
+                    chunks_by_region[region] = []
+                chunks_by_region[region].append(chunk)
 
-        for region_name, chunks in chunks_by_region.items():
-            with open(self.world_folder / 'region' / region_name, mode='r+b') as region:
-                region.seek(0)
-                locations = [[
-                            int.from_bytes(region.read(3), byteorder='big', signed=False) * 4096, 
-                            int.from_bytes(region.read(1), byteorder='big', signed=False) * 4096
-                        ] for i in range(1024) ]
+            for region_name, chunks in chunks_by_region.items():
+                with open(self.world_folder / 'region' / region_name, mode='r+b') as region:
+                    region.seek(0)
+                    locations = [[
+                                int.from_bytes(region.read(3), byteorder='big', signed=False) * 4096,
+                                int.from_bytes(region.read(1), byteorder='big', signed=False) * 4096
+                            ] for i in range(1024) ]
 
-                timestamps = [int.from_bytes(region.read(4), byteorder='big', signed=False) for i in range(1024)]
+                    timestamps = [int.from_bytes(region.read(4), byteorder='big', signed=False) for i in range(1024)]
 
-                data_in_file = bytearray(region.read())
+                    data_in_file = bytearray(region.read())
 
-                chunks.sort(key=lambda chunk: locations[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)][0])
-                # print("writing chunks", [str(c) + ":" + str(locations[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)][0]) for c in chunks])
+                    chunks.sort(key=lambda chunk: locations[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)][0])
+                    # print("writing chunks", [str(c) + ":" + str(locations[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)][0]) for c in chunks])
 
-                for chunk in chunks:
-                    strm = stream.OutputStream()
-                    chunkNBT = chunk.pack()
-                    chunkNBT.serialize(strm)
-                    data = zlib.compress(strm.get_data())
-                    datalen = len(data)
-                    block_data_len = math.ceil((datalen + 5)/4096.0)*4096
-                    # Constuct new data block
-                    data = (datalen + 1).to_bytes(4, byteorder='big', signed=False) + \
-                        (2).to_bytes(1, byteorder='big', signed=False) + \
-                        data + \
-                        (0).to_bytes(block_data_len - (datalen + 5), byteorder='big', signed=False)
+                    for chunk in chunks:
+                        strm = stream.OutputStream()
+                        chunkNBT = chunk.pack()
+                        chunkNBT.serialize(strm)
+                        data = zlib.compress(strm.get_data())
+                        datalen = len(data)
+                        block_data_len = math.ceil((datalen + 5)/4096.0)*4096
+                        # Constuct new data block
+                        data = (datalen + 1).to_bytes(4, byteorder='big', signed=False) + \
+                            (2).to_bytes(1, byteorder='big', signed=False) + \
+                            data + \
+                            (0).to_bytes(block_data_len - (datalen + 5), byteorder='big', signed=False)
 
-                    timestamps[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)] = int(time.time())
+                        timestamps[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)] = int(time.time())
 
-                    loc = locations[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)]
-                    original_sector_length = loc[1]
-                    data_len_diff = block_data_len - original_sector_length
-                    if data_len_diff != 0 and self.debug:
-                        print(f'Danger: Diff is {data_len_diff}, shifting required!')
+                        loc = locations[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)]
+                        original_sector_length = loc[1]
+                        data_len_diff = block_data_len - original_sector_length
+                        if data_len_diff != 0 and self.debug:
+                            print(f'Danger: Diff is {data_len_diff}, shifting required!')
 
-                    locations[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)][1] = block_data_len
+                        locations[((chunk.xpos % 32) + (chunk.zpos % 32) * 32)][1] = block_data_len
 
-                    if loc[0] == 0 or loc[1] == 0:
-                        print('Chunk not generated', chunk)
-                        sys.exit(0)
+                        if loc[0] == 0 or loc[1] == 0:
+                            print('Chunk not generated', chunk)
+                            sys.exit(0)
 
-                    # Adjust sectors after this one that need their locations recalculated
-                    for i, other_loc in enumerate(locations):
-                        if other_loc[0] > loc[0]:
-                            locations[i][0] = other_loc[0] + data_len_diff
+                        # Adjust sectors after this one that need their locations recalculated
+                        for i, other_loc in enumerate(locations):
+                            if other_loc[0] > loc[0]:
+                                locations[i][0] = other_loc[0] + data_len_diff
 
-                    header_length = 2*4096
-                    data_in_file[(loc[0] - header_length):(loc[0] + original_sector_length - header_length)] = data
-                    if self.debug:
-                        print(f'Saving {chunk} with', {'loc': loc, 'new_len': datalen, 'old_len': chunk.orig_size, 'sector_len': block_data_len})
+                        header_length = 2*4096
+                        data_in_file[(loc[0] - header_length):(loc[0] + original_sector_length - header_length)] = data
+                        if self.debug:
+                            print(f'Saving {chunk} with', {'loc': loc, 'new_len': datalen, 'old_len': chunk.orig_size, 'sector_len': block_data_len})
 
-                # rewrite entire file with new chunks and locations recorded
-                region.seek(0)
+                    # rewrite entire file with new chunks and locations recorded
+                    region.seek(0)
 
-                for c_loc in locations:
-                    region.write(int(c_loc[0]/4096).to_bytes(3, byteorder='big', signed=False))
-                    region.write(int(c_loc[1]/4096).to_bytes(1, byteorder='big', signed=False))
+                    for c_loc in locations:
+                        region.write(int(c_loc[0]/4096).to_bytes(3, byteorder='big', signed=False))
+                        region.write(int(c_loc[1]/4096).to_bytes(1, byteorder='big', signed=False))
 
-                for ts in timestamps:
-                    region.write(ts.to_bytes(4, byteorder='big', signed=False))
+                    for ts in timestamps:
+                        region.write(ts.to_bytes(4, byteorder='big', signed=False))
 
-                region.write(data_in_file)
+                    region.write(data_in_file)
 
-                required_padding = (math.ceil(region.tell()/4096.0) * 4096) - region.tell()
+                    required_padding = (math.ceil(region.tell()/4096.0) * 4096) - region.tell()
 
-                region.write((0).to_bytes(required_padding, byteorder='big', signed=False))
+                    region.write((0).to_bytes(required_padding, byteorder='big', signed=False))
 
     def get_block(self, block_pos):
         chunk_pos = self._get_chunk(block_pos)
