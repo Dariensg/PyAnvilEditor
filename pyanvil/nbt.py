@@ -10,9 +10,10 @@ def register_parser(id, clazz):
 
     _parsers[id] = clazz
 
-def create_simple_nbt_class(tag_id, class_tag_name, tag_width, tag_parser):
+def create_byte_nbt_class(tag_id, class_tag_name, tag_width, tag_parser):
+    global ByteNBTTag
 
-    class DataNBTTag:
+    class ByteNBTTag:
 
         clazz_width = tag_width
         clazz_name = class_tag_name
@@ -59,12 +60,284 @@ def create_simple_nbt_class(tag_id, class_tag_name, tag_width, tag_parser):
         def __eq__(self, other):
             return self.tag_name == other.tag_name and self.tag_value == other.tag_value
 
-    register_parser(tag_id, DataNBTTag)
+    register_parser(tag_id, ByteNBTTag)
 
-    return DataNBTTag
+    return ByteNBTTag
+
+def create_short_nbt_class(tag_id, class_tag_name, tag_width, tag_parser):
+    global ShortNBTTag
+
+    class ShortNBTTag:
+
+        clazz_width = tag_width
+        clazz_name = class_tag_name
+        clazz_parser = tag_parser
+        clazz_id = tag_id
+
+        @classmethod
+        def parse(cls, stream, name):
+            return cls(
+                tag_value=struct.unpack(
+                    cls.clazz_parser, 
+                    stream.read(cls.clazz_width)
+                )[0],
+                tag_name=name
+            )
+
+        def __init__(self, tag_value, tag_name='None'):
+            int(tag_value)
+            self.tag_name = tag_name
+            self.tag_value = tag_value
+
+        def print(self, indent=''):
+            print(indent + self.__repr__())
+
+        def get(self):
+            return self.tag_value
+
+        def name(self):
+            return self.tag_name
+
+        def serialize(self, stream, include_name=True):
+            if include_name:
+                stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
+                write_string(stream, self.tag_name)
+
+            stream.write(struct.pack(type(self).clazz_parser, self.tag_value))
+
+        def clone(self):
+            return type(self)(self.tag_value, tag_name=self.tag_name)
+
+        def __repr__(self):
+            return f'{type(self).clazz_name}Tag \'{self.tag_name}\' = {str(self.tag_value)}'
+
+        def __eq__(self, other):
+            return self.tag_name == other.tag_name and self.tag_value == other.tag_value
+
+    register_parser(tag_id, ShortNBTTag)
+
+    return ShortNBTTag
+
+def create_int_nbt_class(tag_id, class_tag_name, tag_width, tag_parser):
+    global IntNBTTag
+
+    class IntNBTTag:
+
+        clazz_width = tag_width
+        clazz_name = class_tag_name
+        clazz_parser = tag_parser
+        clazz_id = tag_id
+
+        @classmethod
+        def parse(cls, stream, name):
+            return cls(
+                tag_value=struct.unpack(
+                    cls.clazz_parser, 
+                    stream.read(cls.clazz_width)
+                )[0],
+                tag_name=name
+            )
+
+        def __init__(self, tag_value, tag_name='None'):
+            int(tag_value)
+            self.tag_name = tag_name
+            self.tag_value = tag_value
+
+        def print(self, indent=''):
+            print(indent + self.__repr__())
+
+        def get(self):
+            return self.tag_value
+
+        def name(self):
+            return self.tag_name
+
+        def serialize(self, stream, include_name=True):
+            if include_name:
+                stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
+                write_string(stream, self.tag_name)
+
+            stream.write(struct.pack(type(self).clazz_parser, self.tag_value))
+
+        def clone(self):
+            return type(self)(self.tag_value, tag_name=self.tag_name)
+
+        def __repr__(self):
+            return f'{type(self).clazz_name}Tag \'{self.tag_name}\' = {str(self.tag_value)}'
+
+        def __eq__(self, other):
+            return self.tag_name == other.tag_name and self.tag_value == other.tag_value
+
+    register_parser(tag_id, IntNBTTag)
+
+    return IntNBTTag
+
+def create_long_nbt_class(tag_id, class_tag_name, tag_width, tag_parser):
+    global LongNBTTag
+
+    class LongNBTTag:
+
+        clazz_width = tag_width
+        clazz_name = class_tag_name
+        clazz_parser = tag_parser
+        clazz_id = tag_id
+
+        @classmethod
+        def parse(cls, stream, name):
+            return cls(
+                tag_value=struct.unpack(
+                    cls.clazz_parser, 
+                    stream.read(cls.clazz_width)
+                )[0],
+                tag_name=name
+            )
+
+        def __init__(self, tag_value, tag_name='None'):
+            int(tag_value)
+            self.tag_name = tag_name
+            self.tag_value = tag_value
+
+        def print(self, indent=''):
+            print(indent + self.__repr__())
+
+        def get(self):
+            return self.tag_value
+
+        def name(self):
+            return self.tag_name
+
+        def serialize(self, stream, include_name=True):
+            if include_name:
+                stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
+                write_string(stream, self.tag_name)
+
+            stream.write(struct.pack(type(self).clazz_parser, self.tag_value))
+
+        def clone(self):
+            return type(self)(self.tag_value, tag_name=self.tag_name)
+
+        def __repr__(self):
+            return f'{type(self).clazz_name}Tag \'{self.tag_name}\' = {str(self.tag_value)}'
+
+        def __eq__(self, other):
+            return self.tag_name == other.tag_name and self.tag_value == other.tag_value
+
+    register_parser(tag_id, LongNBTTag)
+
+    return LongNBTTag
+
+def create_float_nbt_class(tag_id, class_tag_name, tag_width, tag_parser):
+    global FloatNBTTag
+
+    class FloatNBTTag:
+
+        clazz_width = tag_width
+        clazz_name = class_tag_name
+        clazz_parser = tag_parser
+        clazz_id = tag_id
+
+        @classmethod
+        def parse(cls, stream, name):
+            return cls(
+                tag_value=struct.unpack(
+                    cls.clazz_parser, 
+                    stream.read(cls.clazz_width)
+                )[0],
+                tag_name=name
+            )
+
+        def __init__(self, tag_value, tag_name='None'):
+            int(tag_value)
+            self.tag_name = tag_name
+            self.tag_value = tag_value
+
+        def print(self, indent=''):
+            print(indent + self.__repr__())
+
+        def get(self):
+            return self.tag_value
+
+        def name(self):
+            return self.tag_name
+
+        def serialize(self, stream, include_name=True):
+            if include_name:
+                stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
+                write_string(stream, self.tag_name)
+
+            stream.write(struct.pack(type(self).clazz_parser, self.tag_value))
+
+        def clone(self):
+            return type(self)(self.tag_value, tag_name=self.tag_name)
+
+        def __repr__(self):
+            return f'{type(self).clazz_name}Tag \'{self.tag_name}\' = {str(self.tag_value)}'
+
+        def __eq__(self, other):
+            return self.tag_name == other.tag_name and self.tag_value == other.tag_value
+
+    register_parser(tag_id, FloatNBTTag)
+
+    return FloatNBTTag
+
+def create_double_nbt_class(tag_id, class_tag_name, tag_width, tag_parser):
+    global DoubleNBTTag
+
+    class DoubleNBTTag:
+
+        clazz_width = tag_width
+        clazz_name = class_tag_name
+        clazz_parser = tag_parser
+        clazz_id = tag_id
+
+        @classmethod
+        def parse(cls, stream, name):
+            return cls(
+                tag_value=struct.unpack(
+                    cls.clazz_parser, 
+                    stream.read(cls.clazz_width)
+                )[0],
+                tag_name=name
+            )
+
+        def __init__(self, tag_value, tag_name='None'):
+            int(tag_value)
+            self.tag_name = tag_name
+            self.tag_value = tag_value
+
+        def print(self, indent=''):
+            print(indent + self.__repr__())
+
+        def get(self):
+            return self.tag_value
+
+        def name(self):
+            return self.tag_name
+
+        def serialize(self, stream, include_name=True):
+            if include_name:
+                stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
+                write_string(stream, self.tag_name)
+
+            stream.write(struct.pack(type(self).clazz_parser, self.tag_value))
+
+        def clone(self):
+            return type(self)(self.tag_value, tag_name=self.tag_name)
+
+        def __repr__(self):
+            return f'{type(self).clazz_name}Tag \'{self.tag_name}\' = {str(self.tag_value)}'
+
+        def __eq__(self, other):
+            return self.tag_name == other.tag_name and self.tag_value == other.tag_value
+
+    register_parser(tag_id, DoubleNBTTag)
+
+    return DoubleNBTTag
 
 def create_string_nbt_class(tag_id):
-    class DataNBTTag:
+    global StringDataNBTTag
+
+    class StringDataNBTTag:
 
         clazz_id = tag_id
 
@@ -105,12 +378,14 @@ def create_string_nbt_class(tag_id):
         def __eq__(self, other):
             return self.tag_name == other.tag_name and self.tag_value == other.tag_value
 
-    register_parser(tag_id, DataNBTTag)
+    register_parser(tag_id, StringDataNBTTag)
 
-    return DataNBTTag
+    return StringDataNBTTag
 
-def create_array_nbt_class(tag_id, tag_name, sub_type):
-    class ArrayNBTTag:
+def create_byte_array_nbt_class(tag_id, tag_name, sub_type):
+    global ByteArrayNBTTag
+
+    class ByteArrayNBTTag:
 
         clazz_sub_type = sub_type
         clazz_name = tag_name
@@ -163,11 +438,133 @@ def create_array_nbt_class(tag_id, tag_name, sub_type):
                 len(self.children) == len(other.children) and \
                 not any([not self.children[i] == other.children[i] for i in range(len(self.children))])
 
-    register_parser(tag_id, ArrayNBTTag)
+    register_parser(tag_id, ByteArrayNBTTag)
 
-    return ArrayNBTTag
+    return ByteArrayNBTTag
+
+def create_int_array_nbt_class(tag_id, tag_name, sub_type):
+    global IntArrayNBTTag
+
+    class IntArrayNBTTag:
+
+        clazz_sub_type = sub_type
+        clazz_name = tag_name
+        clazz_id = tag_id
+
+        @classmethod
+        def parse(cls, stream, name):
+            payload_length = int.from_bytes(stream.read(4), byteorder='big', signed=True)
+            tag = cls(tag_name=name)
+            for i in range(payload_length):
+                tag.add_child(cls.clazz_sub_type.parse(stream, 'None'))
+            return tag
+
+        def __init__(self, tag_name='None', children=[]):
+            self.tag_name = tag_name
+            self.children = children[:]
+        
+        def add_child(self, tag):
+            self.children.append(tag)
+
+        def name(self):
+            return self.tag_name
+
+        def print(self, indent=''):
+            str_dat = ', '.join([str(c.get()) for c in self.children])
+            print(f'{indent}{type(self).clazz_name}: {self.tag_name} size {str(len(self.children))} = [{str_dat}]')
+
+        def get(self):
+            return [int(c.get()) for c in self.children]
+
+        def serialize(self, stream, include_name=True):
+            if include_name:
+                stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
+                write_string(stream, self.tag_name)
+                
+            stream.write(len(self.children).to_bytes(4, byteorder='big', signed=True))
+
+            for tag in self.children:
+                tag.serialize(stream, include_name=False)
+
+        def clone(self):
+            return type(self)(tag_name=self.tag_name, children=[c.clone() for c in self.children])
+
+        def __repr__(self):
+            str_dat = ', '.join([str(c.get()) for c in self.children])
+            return f'{type(self).clazz_name}: {self.tag_name} size {str(len(self.children))} = [{str_dat}]'
+
+        def __eq__(self, other):
+            return self.tag_name == other.tag_name and \
+                len(self.children) == len(other.children) and \
+                not any([not self.children[i] == other.children[i] for i in range(len(self.children))])
+
+    register_parser(tag_id, IntArrayNBTTag)
+
+    return IntArrayNBTTag
+
+def create_long_array_nbt_class(tag_id, tag_name, sub_type):
+    global LongArrayNBTTag
+
+    class LongArrayNBTTag:
+
+        clazz_sub_type = sub_type
+        clazz_name = tag_name
+        clazz_id = tag_id
+
+        @classmethod
+        def parse(cls, stream, name):
+            payload_length = int.from_bytes(stream.read(4), byteorder='big', signed=True)
+            tag = cls(tag_name=name)
+            for i in range(payload_length):
+                tag.add_child(cls.clazz_sub_type.parse(stream, 'None'))
+            return tag
+
+        def __init__(self, tag_name='None', children=[]):
+            self.tag_name = tag_name
+            self.children = children[:]
+        
+        def add_child(self, tag):
+            self.children.append(tag)
+
+        def name(self):
+            return self.tag_name
+
+        def print(self, indent=''):
+            str_dat = ', '.join([str(c.get()) for c in self.children])
+            print(f'{indent}{type(self).clazz_name}: {self.tag_name} size {str(len(self.children))} = [{str_dat}]')
+
+        def get(self):
+            return [int(c.get()) for c in self.children]
+
+        def serialize(self, stream, include_name=True):
+            if include_name:
+                stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
+                write_string(stream, self.tag_name)
+                
+            stream.write(len(self.children).to_bytes(4, byteorder='big', signed=True))
+
+            for tag in self.children:
+                tag.serialize(stream, include_name=False)
+
+        def clone(self):
+            return type(self)(tag_name=self.tag_name, children=[c.clone() for c in self.children])
+
+        def __repr__(self):
+            str_dat = ', '.join([str(c.get()) for c in self.children])
+            return f'{type(self).clazz_name}: {self.tag_name} size {str(len(self.children))} = [{str_dat}]'
+
+        def __eq__(self, other):
+            return self.tag_name == other.tag_name and \
+                len(self.children) == len(other.children) and \
+                not any([not self.children[i] == other.children[i] for i in range(len(self.children))])
+
+    register_parser(tag_id, LongArrayNBTTag)
+
+    return LongArrayNBTTag
 
 def create_list_nbt_class(tag_id):
+    global ListNBTTag
+
     class ListNBTTag:
 
         clazz_id = tag_id
@@ -230,6 +627,8 @@ def create_list_nbt_class(tag_id):
     return ListNBTTag
 
 def create_compund_nbt_class(tag_id):
+    global CompundNBTTag
+
     class CompundNBTTag:
 
         clazz_id = tag_id
@@ -306,21 +705,21 @@ def create_compund_nbt_class(tag_id):
 
 _parsers = {}
 
-ByteTag = create_simple_nbt_class(1, 'Byte', 1, '>b')
-ShortTag = create_simple_nbt_class(2, 'Short', 2, '>h')
-IntTag = create_simple_nbt_class(3, 'Int', 4, '>i')
-LongTag = create_simple_nbt_class(4, 'Long', 8, '>q')
-FloatTag = create_simple_nbt_class(5, 'Float', 4, '>f')
-DoubleTag = create_simple_nbt_class(6, 'Double', 8, '>d')
+ByteTag = create_byte_nbt_class(1, 'Byte', 1, '>b')
+ShortTag = create_short_nbt_class(2, 'Short', 2, '>h')
+IntTag = create_int_nbt_class(3, 'Int', 4, '>i')
+LongTag = create_long_nbt_class(4, 'Long', 8, '>q')
+FloatTag = create_float_nbt_class(5, 'Float', 4, '>f')
+DoubleTag = create_double_nbt_class(6, 'Double', 8, '>d')
 
-ByteArrayTag = create_array_nbt_class(7, 'ByteArray', ByteTag)
+ByteArrayTag = create_byte_array_nbt_class(7, 'ByteArray', ByteTag)
 
 StringTag = create_string_nbt_class(8)
 ListTag = create_list_nbt_class(9)
 CompoundTag = create_compund_nbt_class(10)
 
-IntArrayTag = create_array_nbt_class(11, 'IntArray', IntTag)
-LongArrayTag = create_array_nbt_class(12, 'LongArray', LongTag)
+IntArrayTag = create_int_array_nbt_class(11, 'IntArray', IntTag)
+LongArrayTag = create_long_array_nbt_class(12, 'LongArray', LongTag)
 
 def parse_nbt(stream):
     global _parsers
